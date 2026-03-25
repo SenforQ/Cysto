@@ -124,7 +124,7 @@ class _MessagePageState extends State<MessagePage> {
       }
       final meta = await ChatHistoryService.getSessionMeta(id);
       final isCharacter =
-          id.startsWith('zhipu_char_') || (meta?['location'] == 'Character');
+          id.startsWith('CystoZP_char_') || (meta?['location'] == 'Character');
       if (!isCharacter) continue;
       final item = _characterItemFromMeta(meta);
       if (item == null) continue;

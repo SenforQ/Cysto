@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class KieAiService {
+class CystoKEAiService {
   static const String _baseUrl = 'https://api.kie.ai';
   static const String _apiKey = 'a8f1d134d5811bdb4cb938fae8517fe2';
 

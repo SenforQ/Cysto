@@ -3,6 +3,8 @@ PODS:
     - Adjust/Core (= 4.31.0)
   - Adjust/Core (4.31.0)
   - Alamofire (5.9.1)
+  - audio_session (0.0.1):
+    - Flutter
   - Firebase/CoreOnly (10.24.0):
     - FirebaseCore (= 10.24.0)
   - Firebase/Messaging (10.24.0):
@@ -89,6 +91,9 @@ PODS:
     - FlutterMacOS
   - in_app_review (2.0.0):
     - Flutter
+  - just_audio (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - KeychainSwift (24.0.0)
   - nanopb (2.30910.0):
     - nanopb/decode (= 2.30910.0)
@@ -119,6 +124,7 @@ PODS:
 DEPENDENCIES:
   - Adjust (~> 4.31.0)
   - Alamofire (~> 5.9.1)
+  - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - Firebase/Messaging (~> 10.24.0)
   - Firebase/RemoteConfig
   - Flutter (from `Flutter`)
@@ -129,6 +135,7 @@ DEPENDENCIES:
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
   - in_app_review (from `.symlinks/plugins/in_app_review/ios`)
+  - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - KeychainSwift (~> 24.0.0)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -160,6 +167,8 @@ SPEC REPOS:
     - PromisesObjC
 
 EXTERNAL SOURCES:
+  audio_session:
+    :path: ".symlinks/plugins/audio_session/ios"
   Flutter:
     :path: Flutter
   gal:
@@ -174,6 +183,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/in_app_purchase_storekit/darwin"
   in_app_review:
     :path: ".symlinks/plugins/in_app_review/ios"
+  just_audio:
+    :path: ".symlinks/plugins/just_audio/darwin"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -200,6 +211,7 @@ CHECKOUT OPTIONS:
 SPEC CHECKSUMS:
   Adjust: 8d4c9da5bb1d161db5d35dd091e34a641c9511ef
   Alamofire: f36a35757af4587d8e4f4bfa223ad10be2422b8c
+  audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   Firebase: 91fefd38712feb9186ea8996af6cbdef41473442
   FirebaseABTesting: d87f56707159bae64e269757a6e963d490f2eebe
   FirebaseCore: 11dc8a16dfb7c5e3c3f45ba0e191a33ac4f50894
@@ -219,6 +231,7 @@ SPEC CHECKSUMS:
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   in_app_purchase_storekit: d1a48cb0f8b29dbf5f85f782f5dd79b21b90a5e6
   in_app_review: 7dd1ea365263f834b8464673f9df72c80c17c937
+  just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   KeychainSwift: 007c4647486e4563adca839cf02cef00deb3b670
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499

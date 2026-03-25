@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/generated_image_item.dart';
 import '../services/chat_history_service.dart';
 import '../services/user_preferences.dart';
-import '../services/zhipu_chat_service.dart';
+import '../services/cystozp_chat_service.dart';
 import '../widgets/bubble_background.dart';
 import '../widgets/character_image_display.dart';
 
@@ -22,7 +22,7 @@ String _formatChatTime(DateTime? dt) {
 }
 
 String _sessionIdFor(GeneratedImageItem item) {
-  return 'zhipu_char_${item.url.hashCode}_${item.characterName.hashCode}';
+  return 'CystoZP_char_${item.url.hashCode}_${item.characterName.hashCode}';
 }
 
 String _systemPromptFor(GeneratedImageItem item) {
@@ -148,8 +148,8 @@ class _CharacterAiChatPageState extends State<CharacterAiChatPage> {
     _scrollToBottom();
 
     try {
-      final apiMsgs = ZhipuChatService.messagesForApi(_messages);
-      final reply = await ZhipuChatService.completeChat(
+      final apiMsgs = CystoZPChatService.messagesForApi(_messages);
+      final reply = await CystoZPChatService.completeChat(
         systemPrompt: _systemPromptFor(widget.item),
         conversation: apiMsgs,
       );

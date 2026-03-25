@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/magic_video_history_entry.dart';
-import 'kie_magic_video_service.dart';
+import 'cystoke_magic_video_service.dart';
 
 class MagicVideoHistoryService {
   static const String _key = 'magic_video_history_v1';
@@ -93,7 +93,7 @@ class MagicVideoHistoryService {
       final e = list[i];
       if (_terminal(e.state)) continue;
       try {
-        final s = await KieMagicVideoService.getRecordInfo(e.taskId);
+        final s = await CystoKEMagicVideoService.getRecordInfo(e.taskId);
         final video = s.resultUrls != null && s.resultUrls!.isNotEmpty
             ? s.resultUrls!.first
             : null;

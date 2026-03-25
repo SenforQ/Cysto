@@ -1,5 +1,10 @@
+import 'dart:async';
+
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'create_image_page.dart';
 import 'image_detail_page.dart';
 import '../services/generated_images_service.dart';
@@ -8,6 +13,9 @@ import '../widgets/add_my_character_sheet.dart';
 import '../widgets/character_image_display.dart';
 
 const Color _kThemeColor = Color(0xFF00C5E8);
+const String _kCystoHomeBgmPromptDoneKey = 'cysto_home_bgm_prompt_done_v1';
+const String _kCystoHomeBgmUserAgreedKey = 'cysto_home_bgm_user_agreed_v1';
+const String _kCystoHomeBgmAssetPath = 'assets/CystoBGMusic.mp3';
 
 final List<GeneratedImageItem> _defaultSampleImages = [
   GeneratedImageItem(
@@ -55,19 +63,34 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   List<GeneratedImageItem> _items = [];
+  late final AnimationController _bgmRotateController;
+  final AudioPlayer _bgmPlayer = AudioPlayer();
+  StreamSubscription<bool>? _bgmPlayingSub;
+  bool _bgmPromptDone = false;
+  bool _bgmInfraReady = false;
 
   @override
   void initState() {
     super.initState();
+    _bgmRotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    );
     _loadImages();
     GeneratedImagesService.imageCountNotifier.addListener(_onImageCountChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_bootstrapHomeBgm());
+    });
   }
 
   @override
   void dispose() {
     GeneratedImagesService.imageCountNotifier.removeListener(_onImageCountChanged);
+    _bgmPlayingSub?.cancel();
+    _bgmRotateController.dispose();
+    unawaited(_bgmPlayer.dispose());
     super.dispose();
   }
 
@@ -76,6 +99,142 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadImages() async {
     final list = await GeneratedImagesService.getItems();
     if (mounted) setState(() => _items = list);
+  }
+
+  Future<void> _bootstrapHomeBgm() async {
+    final prefs = await SharedPreferences.getInstance();
+    final done = prefs.getBool(_kCystoHomeBgmPromptDoneKey) ?? false;
+    final agreed = prefs.getBool(_kCystoHomeBgmUserAgreedKey) ?? false;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _bgmPromptDone = done;
+    });
+    if (agreed && done) {
+      try {
+        await _prepareBgmPlayer();
+        if (mounted) {
+          await _bgmPlayer.play();
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Background music could not be played.')),
+          );
+        }
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    if (!done) {
+      await _showHomeBgmConsentDialog();
+    }
+  }
+
+  Future<void> _prepareBgmPlayer() async {
+    if (_bgmInfraReady) {
+      return;
+    }
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+    await _bgmPlayer.setLoopMode(LoopMode.one);
+    await _bgmPlayer.setAsset(_kCystoHomeBgmAssetPath);
+    _bgmPlayingSub = _bgmPlayer.playingStream.listen((playing) {
+      if (!mounted) {
+        return;
+      }
+      if (playing) {
+        _bgmRotateController.repeat();
+      } else {
+        _bgmRotateController.stop();
+        _bgmRotateController.reset();
+      }
+      setState(() {});
+    });
+    _bgmInfraReady = true;
+  }
+
+  Future<void> _toggleHomeBgm() async {
+    try {
+      await _prepareBgmPlayer();
+      if (_bgmPlayer.playing) {
+        await _bgmPlayer.pause();
+      } else {
+        await _bgmPlayer.play();
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Background music could not be played.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showHomeBgmConsentDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) {
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Immersive background music'),
+          content: const Text(
+            'For a more immersive experience, we may play background music using background audio. If you agree, playback will start automatically and may continue while the app is in the background. You can pause or resume anytime with the circular button at the bottom right.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await prefs.setBool(_kCystoHomeBgmPromptDoneKey, true);
+                await prefs.setBool(_kCystoHomeBgmUserAgreedKey, false);
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+                if (mounted) {
+                  setState(() {
+                    _bgmPromptDone = true;
+                  });
+                }
+              },
+              child: const Text('Decline'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                await prefs.setBool(_kCystoHomeBgmPromptDoneKey, true);
+                await prefs.setBool(_kCystoHomeBgmUserAgreedKey, true);
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+                if (mounted) {
+                  setState(() {
+                    _bgmPromptDone = true;
+                  });
+                }
+                try {
+                  await _prepareBgmPlayer();
+                  if (mounted) {
+                    await _bgmPlayer.play();
+                  }
+                } catch (_) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Background music could not be played.')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Agree'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _openCreateImage() async {
@@ -89,6 +248,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.viewPaddingOf(context).bottom;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -105,133 +265,173 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadImages,
-        color: _kThemeColor,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Create anime characters with AI',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildCreateCard(),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Featured characters',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 140,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: _buildPresetCard(_defaultSampleImages[0]),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: _buildPresetCard(_defaultSampleImages[1]),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: _buildPresetCard(_defaultSampleImages[2]),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'My characters',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverMasonryGrid.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childCount: _items.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    final height = 160.0;
-                    return GestureDetector(
-                      onTap: () async {
-                        await showAddMyCharacterSheet(context);
-                      },
-                      child: _buildAddCharacterCell(height),
-                    );
-                  }
-                  final item = _items[index - 1];
-                  final height = 160.0 + ((index - 1) % 3) * 40.0;
-                  final botId = _presetUrlToBotId[item.url];
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ImageDetailPage(
-                            item: item,
-                            botId: botId,
+      body: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          RefreshIndicator(
+            onRefresh: _loadImages,
+            color: _kThemeColor,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Create anime characters with AI',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        _buildCreateCard(),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Featured characters',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 140,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: _buildPresetCard(_defaultSampleImages[0]),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                  child: _buildPresetCard(_defaultSampleImages[1]),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: _buildPresetCard(_defaultSampleImages[2]),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'My characters',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverMasonryGrid.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childCount: _items.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        final height = 160.0;
+                        return GestureDetector(
+                          onTap: () async {
+                            await showAddMyCharacterSheet(context);
+                          },
+                          child: _buildAddCharacterCell(height),
+                        );
+                      }
+                      final item = _items[index - 1];
+                      final height = 160.0 + ((index - 1) % 3) * 40.0;
+                      final botId = _presetUrlToBotId[item.url];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ImageDetailPage(
+                                item: item,
+                                botId: botId,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _buildImageCard(item, height),
                       );
                     },
-                    child: _buildImageCard(item, height),
-                  );
-                },
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 24 + 66 + MediaQuery.of(context).padding.bottom + (_bgmPromptDone ? 72 : 0),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_bgmPromptDone)
+            Positioned(
+              right: 16,
+              bottom: 16 + bottomSafe,
+              child: Material(
+                color: Colors.black,
+                shape: const CircleBorder(),
+                elevation: 6,
+                shadowColor: Colors.black45,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _toggleHomeBgm,
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Center(
+                      child: AnimatedBuilder(
+                        animation: _bgmRotateController,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _bgmRotateController.value * 6.283185307179586,
+                            child: child,
+                          );
+                        },
+                        child: const Icon(
+                          Icons.music_note_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 24 + 66 + MediaQuery.of(context).padding.bottom,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

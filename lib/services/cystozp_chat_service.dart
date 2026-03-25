@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-class ZhipuChatService {
+class CystoZPChatService {
   static const String _endpoint =
       'https://open.bigmodel.cn/api/paas/v4/chat/completions';
   static const String _model = 'glm-4-flash';
 
   static const String _apiKey = String.fromEnvironment(
-    'ZHIPU_API_KEY',
+    'CYSTOZP_API_KEY',
     defaultValue:
         '7c7da0992839409aa6b29cb56e3a7452.III9yUXMpUTIuNJh',
   );
@@ -38,7 +38,7 @@ class ZhipuChatService {
     required List<Map<String, String>> conversation,
   }) async {
     if (_apiKey.isEmpty) {
-      throw Exception('ZHIPU_API_KEY is not configured');
+      throw Exception('CYSTOZP_API_KEY is not configured');
     }
     final body = <String, dynamic>{
       'model': _model,

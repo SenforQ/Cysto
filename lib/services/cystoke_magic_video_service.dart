@@ -3,14 +3,16 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
-const String _kieApiBase = 'https://api.kie.ai';
+const String _cystoKEApiBase = 'https://api.kie.ai';
 const String _uploadBase = 'https://kieai.redpandaai.co';
 
-const String kieMagicApiKey =
-    String.fromEnvironment('KIE_MAGIC_API_KEY', defaultValue: 'ad203d20131debd16b9336f035bc691e');
+const String cystoKEMagicApiKey = String.fromEnvironment(
+  'CYSTOKE_MAGIC_API_KEY',
+  defaultValue: 'ad203d20131debd16b9336f035bc691e',
+);
 
-class KieSoraTaskStatus {
-  KieSoraTaskStatus({
+class CystoKESoraTaskStatus {
+  CystoKESoraTaskStatus({
     required this.state,
     this.resultUrls,
     this.failMsg,
@@ -23,9 +25,9 @@ class KieSoraTaskStatus {
   final int? progress;
 }
 
-class KieMagicVideoService {
+class CystoKEMagicVideoService {
   static Map<String, String> get _authHeaders => {
-        'Authorization': 'Bearer $kieMagicApiKey',
+        'Authorization': 'Bearer $cystoKEMagicApiKey',
         'Content-Type': 'application/json',
       };
 
@@ -96,7 +98,7 @@ class KieMagicVideoService {
     };
 
     final response = await http.post(
-      Uri.parse('$_kieApiBase/api/v1/jobs/createTask'),
+      Uri.parse('$_cystoKEApiBase/api/v1/jobs/createTask'),
       headers: _authHeaders,
       body: jsonEncode(body),
     );
@@ -115,8 +117,8 @@ class KieMagicVideoService {
     return data['taskId'] as String?;
   }
 
-  static Future<KieSoraTaskStatus> getRecordInfo(String taskId) async {
-    final uri = Uri.parse('$_kieApiBase/api/v1/jobs/recordInfo').replace(
+  static Future<CystoKESoraTaskStatus> getRecordInfo(String taskId) async {
+    final uri = Uri.parse('$_cystoKEApiBase/api/v1/jobs/recordInfo').replace(
       queryParameters: {'taskId': taskId},
     );
     final response = await http.get(uri, headers: _authHeaders);
@@ -147,7 +149,7 @@ class KieMagicVideoService {
     final failRaw = data['failMsg'] as String?;
     final failMsg =
         failRaw != null && failRaw.trim().isNotEmpty ? failRaw : null;
-    return KieSoraTaskStatus(
+    return CystoKESoraTaskStatus(
       state: state,
       resultUrls: urls,
       failMsg: failMsg,

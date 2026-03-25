@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/generated_images_service.dart';
-import '../services/kie_ai_service.dart';
+import '../services/cystoke_ai_service.dart';
 import '../services/wallet_service.dart';
 import 'create_image_compliance_dialog.dart';
 
@@ -225,7 +225,7 @@ class _CreateImageFormState extends State<CreateImageForm> {
     });
 
     try {
-      final taskId = await KieAiService.createImageTask(prompt: prompt);
+      final taskId = await CystoKEAiService.createImageTask(prompt: prompt);
       if (taskId == null) {
         throw Exception('Failed to create task');
       }
@@ -234,7 +234,7 @@ class _CreateImageFormState extends State<CreateImageForm> {
       for (int i = 0; i < 60; i++) {
         await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
-        imageUrl = await KieAiService.getTaskResult(taskId);
+        imageUrl = await CystoKEAiService.getTaskResult(taskId);
         if (imageUrl != null) break;
       }
 

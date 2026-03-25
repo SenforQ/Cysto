@@ -10,7 +10,7 @@ import '../data/magic_prompt_presets.dart';
 import '../models/generated_image_item.dart';
 import '../models/magic_video_history_entry.dart';
 import '../services/generated_images_service.dart';
-import '../services/kie_magic_video_service.dart';
+import '../services/cystoke_magic_video_service.dart';
 import '../services/local_character_image_store.dart';
 import '../services/magic_video_history_service.dart';
 import '../services/wallet_service.dart';
@@ -97,7 +97,7 @@ class GalleryPageState extends State<GalleryPage> {
 
   Future<String?> _resolvePublicImageUrl() async {
     if (_pickedFile != null && _pickedPreviewBytes != null) {
-      return KieMagicVideoService.uploadBase64Image(
+      return CystoKEMagicVideoService.uploadBase64Image(
         _pickedPreviewBytes!,
         fileName:
             'magic_${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -111,7 +111,7 @@ class GalleryPageState extends State<GalleryPage> {
     }
     if (url.startsWith('assets/')) {
       final data = await rootBundle.load(url);
-      return KieMagicVideoService.uploadBase64Image(
+      return CystoKEMagicVideoService.uploadBase64Image(
         data.buffer.asUint8List(),
         fileName: 'magic_asset_${DateTime.now().millisecondsSinceEpoch}.png',
       );
@@ -120,7 +120,7 @@ class GalleryPageState extends State<GalleryPage> {
       final f = await LocalCharacterImageStore.fileForUrl(url);
       if (f == null) return null;
       final bytes = await f.readAsBytes();
-      return KieMagicVideoService.uploadBase64Image(
+      return CystoKEMagicVideoService.uploadBase64Image(
         bytes,
         fileName: 'magic_local_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
@@ -215,7 +215,7 @@ class GalleryPageState extends State<GalleryPage> {
       }
 
       setState(() => _pollStatus = 'Creating image-to-video task…');
-      taskId = await KieMagicVideoService.createSoraImageToVideoTask(
+      taskId = await CystoKEMagicVideoService.createSoraImageToVideoTask(
         prompt: prompt,
         imageUrls: [imageUrl],
         aspectRatio: _aspectRatio,
@@ -240,7 +240,7 @@ class GalleryPageState extends State<GalleryPage> {
         ),
       );
 
-      final videoUrl = await KieMagicVideoService.pollUntilVideoUrl(
+      final videoUrl = await CystoKEMagicVideoService.pollUntilVideoUrl(
         tid,
         onUpdate: (state, progress) {
           if (mounted) {
@@ -375,7 +375,7 @@ class GalleryPageState extends State<GalleryPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Turn your anime-style character art into short motion clips using Kie AI Sora2 image-to-video.',
+                'Turn your anime-style character art into short motion clips using CystoKE AI Sora2 image-to-video.',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.45,
